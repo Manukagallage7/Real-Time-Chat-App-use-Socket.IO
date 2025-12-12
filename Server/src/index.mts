@@ -25,6 +25,24 @@ io.on('connection', (socket):void => {
 
         socket.emit('chatUsers', Object.keys(userData));
         console.log('Username registered:', username, socket.id);
+
+        socket.broadcast.emit('chatUsers', Object.keys(userData));
+        socket.emit('chatUsers', Object.keys(userData));
+    });
+
+    socket.on('message', (data: {message:string, chatUser:string}):void => {
+        const recipients:string | undefined = userData[data.chatUser];
+        if(recipients){
+            let sender:string ;
+        Object.entries(userData).forEach(([key, value]:[string, string]): void => {
+            if(value === socket.id){
+                sender = key;
+            }
+        });
+        io.to(recipients).emit('chat', {msg: data.message, member: data.chatUser});
+        } else {
+            console.log(`User ${data.chatUser} not found.`);
+        }
     });
 
     socket.on("disconnect", ():void => {
