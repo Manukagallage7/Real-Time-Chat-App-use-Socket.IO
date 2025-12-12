@@ -6,6 +6,7 @@ const App = ()=> {
   const [userData, setUserData] = useState<string[] | string>([]);
   const [chatuser, setChatUser] = useState<string>("");
   const [chat, setChat] = useState<string[]>([]);
+  const [message, setMessage] = useState<string>("");
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
@@ -23,6 +24,14 @@ const App = ()=> {
     newSocket.on('chatUsers', (userData:string[] | string):void => {
       console.log('Chat Users:', userData);
     });
+
+    newSocket.on('chat', (chatData: {msg:string, member:string}):void=>{
+      if(chatuser!==chatData.member){
+        setChat([]);
+        setChatUser(chatData.member);
+      }
+      setChat(pre => [...pre, chatData.msg]);
+    })
 
     return() => {
       console.log('Disconnecting socket...');
@@ -43,10 +52,20 @@ const App = ()=> {
       </div>
       <div>
         <p>chat</p>
-        <select onChangeCapture={(e: ChangeEvent<HTMLSelectElement>)=>setChatUser(e.target.value)}>
-          {userData?.map((user:string):JSX.Element=><option value={user}></option>)}
+        <select value={chatuser?chatuser:undefined} onChangeCapture={(e: ChangeEvent<HTMLSelectElement>)=>setChatUser(e.target.value)}>
+          {Array.isArray(userData) && userData.map((user: string): JSX.Element => <option key={user} value={user}></option>)}
         </select>
-
+        <div>
+          {chat?.map((chat: string,i:number): JSX.Element => <p key={i}>{chat}</p>)}
+        </div>
+        <input placeholder="type your msg" value={message} onChange={(e: ChangeEvent<HTMLInputElement>) => setMessage(e.target.value)}  />
+        <button onClick={()=>{
+          if(socket && chatuser){
+            socket.emit('message', {message:chatuser});
+            setMessage("");
+            setChat(pre => [...pre, message]);
+          }
+        }}>Send</button>
       </div>
     </div>
   );
